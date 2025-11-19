@@ -12,22 +12,28 @@ def index():
 def prijava():
     return render_template("prijava.html")
 
-@app.route('/prijava-submit/')
-def prijava_submit():
-    uporabnisko_ime = request.args.get("username")
-    geslo = request.args.get("geslo")
-    print(uporabnisko_ime, geslo)
-
+def preveri_uporabnika(username,password):
     conn = sqlite3.connect("test.db")
     cursor = conn.cursor()
     query = 'SELECT * FROM contacts WHERE first_name="'+uporabnisko_ime+'" AND last_name="'+geslo+'"'
     cursor.execute(query)
     result = cursor.fetchone()
     conn.close()
-
     if result:
-        response = make_response(redirect("/main/"))
-        response.set_cookie("username", uporabnisko_ime)
+        return True
+    else:
+        return False
+
+@app.route('/prijava-submit/')
+def prijava_submit():
+    uporabnisko_ime = request.args.get("username")
+    geslo = request.args.get("geslo")
+    print(uporabnisko_ime, geslo)
+
+    if preveri_uporabnika(uporabnisko_ime, geslo):
+        respone = make_respone(redirect("/main/"))
+        response.set_cookies("username", uporabnisko_ime)
+        response.set_cookies("password", geslo)
         return response
     else:
         return render_template("prijava.html", info_text = "Prijava ni uspela")
@@ -39,7 +45,19 @@ def registracija():
 @app.route('/registracija-submit/')
 def registracija_submit():
     uporabnisko_ime = request.args.get("username")
+    conn = sqlite3.connect("test.db")
+    cursor = conn.cursor()
+    query = 'SELECT * FROM contacts WHERE first_name="'+uporabnisko_ime+'"'
+    cursor.execute(query)
+    result = cursor.fetchone()
+    if result:
+        conn.close()
+        return "Username ze obstaja!"
+
     geslo = request.args.get("geslo")
+    dolzina = len(geslo)
+    if dolzina <= 6:
+        return "Geslo je prekratko"
 
     insert_command = 'INSERT INTO contacts(first_name, last_name) VALUES("'+uporabnisko_ime+'", "'+geslo+'");'
     print(insert_command)
@@ -53,7 +71,10 @@ def registracija_submit():
 @app.route('/main/')
 def main():
     username = request.cookies.get("username")
-    if not username:
+    password = request.cookies.get("password")
+    if not username or not password:
+        return redirect("/prijava/")
+    if not preveri_uporabnika(username, password):
         return redirect("/prijava/")
 
     conn = sqlite3.connect("test.db")
