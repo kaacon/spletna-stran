@@ -12,7 +12,7 @@ def index():
 def prijava():
     return render_template("prijava.html")
 
-def preveri_uporabnika(username,password):
+def preveri_uporabnika(uporabnisko_ime, geslo):
     conn = sqlite3.connect("test.db")
     cursor = conn.cursor()
     query = 'SELECT * FROM contacts WHERE first_name="'+uporabnisko_ime+'" AND last_name="'+geslo+'"'
